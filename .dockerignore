@@ -6,7 +6,6 @@ data/
 logs/
 *.bat
 *.db
-.kiro/
 .settings/
 .project
 .pydevproject
