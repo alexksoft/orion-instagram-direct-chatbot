@@ -152,8 +152,9 @@ def set_conversation_status(user_id: str, status: str):
 # The menu and restaurant info live in a YAML file.
 # The admin can edit it without touching any code.
 
-KB_PATH = ".kiro/specs/restaurant-ai-assistant/knowledge-base.yaml"
-SYSTEM_PROMPT_PATH = ".kiro/specs/restaurant-ai-assistant/system-prompt.md"
+_BASE = os.path.dirname(os.path.abspath(__file__))
+KB_PATH = os.path.join(_BASE, ".kiro/specs/restaurant-ai-assistant/knowledge-base.yaml")
+SYSTEM_PROMPT_PATH = os.path.join(_BASE, ".kiro/specs/restaurant-ai-assistant/system-prompt.md")
 
 def load_knowledge_base() -> str:
     """
