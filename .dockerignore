@@ -1,0 +1,12 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+data/
+logs/
+*.bat
+*.db
+.kiro/
+.settings/
+.project
+.pydevproject

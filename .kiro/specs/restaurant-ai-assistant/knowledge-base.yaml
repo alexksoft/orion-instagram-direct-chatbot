@@ -1,0 +1,152 @@
+# =============================================================================
+# База знань асистента Orion / Orion assistant knowledge base
+# =============================================================================
+# ЦЕЙ ФАЙЛ РЕДАГУЄ АДМІНІСТРАТОР БЕЗ ПРОГРАМІСТА.
+# Змінюйте назви, ціни, склад, умови доставки — асистент підхопить зміни.
+# Поля з "ЗАПОВНИТИ / TO FILL" треба заповнити реальними даними ресторану:
+# на сайті theOrion.kiev.ua детального меню з цінами немає, тож нижче —
+# підтверджені факти + заготовки категорій.
+# THIS FILE IS EDITED BY A NON-TECHNICAL ADMIN. Fields marked TO FILL need
+# real data from the restaurant.
+# =============================================================================
+
+restaurant:
+  name: "Orion"
+  city: "Київ / Kyiv"
+  # Кафе-бар з хоспер-кухнею (м'ясо та рибу готують на вугіллі у хоспер-печі),
+  # великий вибір пива та домашніх настоянок. Розташований у центрі Києва.
+  description_uk: >
+    Orion — кафе-бар у центрі Києва. Наша фішка — хоспер-піч: мʼясо та риба
+    готуються на вугіллі, рівномірно обсмажуються з усіх боків, часто прямо на
+    очах гостей. Понад 11 сортів свіжого розливного пива (німецькі, чеські,
+    іспанські, шотландські, ірландські, вітчизняні та крафтові виробники),
+    вражаючий вибір домашніх настоянок і ковбаски власного виробництва.
+  description_en: >
+    Orion is a cafe-bar in central Kyiv. Our signature is the hosper (charcoal)
+    oven: meat and fish are grilled over charcoal, often right in front of
+    guests. Over 11 kinds of fresh draft beer (German, Czech, Spanish, Scottish,
+    Irish, local and craft), an impressive choice of homemade infusions, and
+    house-made sausages.
+  address: "ЗАПОВНИТИ / TO FILL — точна адреса в центрі Києва"
+  hours: "ЗАПОВНИТИ / TO FILL — години роботи (сайт зазначає: працюємо щодня)"
+
+contacts:
+  reservation_phone: "+380 (98) 724-23-24"   # бронювання столу через адміністратора
+  instagram: "ЗАПОВНИТИ / TO FILL — @нік в Instagram"
+  note_uk: "Бронювання столу — за телефоном адміністратора."
+  note_en: "Table reservations — by phone with the administrator."
+
+# --- Особливості / Highlights (підтверджено сайтом) ---
+highlights:
+  - uk: "Хоспер-піч: м'ясо та риба на вугіллі"
+    en: "Hosper oven: charcoal-grilled meat and fish"
+  - uk: "Понад 11 сортів розливного пива"
+    en: "Over 11 kinds of draft beer"
+  - uk: "Домашні настоянки (Обліпихівка, Малинівка, Вишнівка, Хріновуха, Медовуха)"
+    en: "Homemade infusions (sea-buckthorn, raspberry, cherry, horseradish, honey)"
+  - uk: "Ковбаски власного виробництва — 5 видів, 100% м'ясна сировина, хоспер-піч"
+    en: "House-made sausages — 5 kinds, 100% meat, hosper oven"
+
+# --- Меню / Menu ---
+# Категорії підтверджені сайтом; конкретні позиції та ЦІНИ треба заповнити.
+menu:
+  categories:
+    - id: hosper
+      name_uk: "Хоспер меню (м'ясо та риба на вугіллі)"
+      name_en: "Hosper menu (charcoal meat & fish)"
+      items:
+        - id: hosper_placeholder_1
+          name_uk: "ЗАПОВНИТИ — напр. Стейк / риба"
+          name_en: "TO FILL — e.g. steak / fish"
+          price: 0            # ЗАПОВНИТИ (грн)
+          weight: ""          # ЗАПОВНИТИ (г)
+          composition_uk: ""  # склад
+          composition_en: ""
+          allergens: []
+          available: true
+
+    - id: sausages
+      name_uk: "Ковбаски власного виробництва (5 видів)"
+      name_en: "House-made sausages (5 kinds)"
+      items:
+        - id: sausage_placeholder_1
+          name_uk: "ЗАПОВНИТИ — вид ковбаски 1"
+          name_en: "TO FILL — sausage kind 1"
+          price: 0
+          weight: ""
+          composition_uk: "100% м'ясна сировина, хоспер-піч"
+          composition_en: "100% meat, hosper oven"
+          allergens: []
+          available: true
+
+    - id: beer
+      name_uk: "Пиво (розливне, понад 11 сортів)"
+      name_en: "Beer (draft, 11+ kinds)"
+      items:
+        - id: beer_placeholder_1
+          name_uk: "ЗАПОВНИТИ — сорт пива"
+          name_en: "TO FILL — beer variety"
+          price: 0            # ціна за 0.3 / 0.5 л — уточнити
+          volume: ""          # ЗАПОВНИТИ (0.3 / 0.5 л)
+          available: true
+
+    - id: infusions
+      name_uk: "Настоянки (домашні)"
+      name_en: "Infusions (homemade)"
+      items:
+        - id: inf_oblipyha
+          name_uk: "Обліпихівка"
+          name_en: "Sea-buckthorn infusion"
+          price: 0
+          volume: "50 мл (уточнити)"
+          available: true
+        - id: inf_malyna
+          name_uk: "Малинівка"
+          name_en: "Raspberry infusion"
+          price: 0
+          available: true
+        - id: inf_vyshnia
+          name_uk: "Вишнівка"
+          name_en: "Cherry infusion"
+          price: 0
+          available: true
+        - id: inf_hrin
+          name_uk: "Хріновуха"
+          name_en: "Horseradish infusion"
+          price: 0
+          available: true
+        - id: inf_med
+          name_uk: "Медовуха"
+          name_en: "Honey infusion"
+          price: 0
+          available: true
+
+# --- Доставка та самовивіз / Delivery & pickup ---
+# На сайті умов доставки немає — ЗАПОВНИТИ. Якщо доставки немає, вкажіть це.
+delivery:
+  available: null            # true / false — ЗАПОВНИТИ
+  zones: []                  # ЗАПОВНИТИ: [{ name, price, min_order }]
+  min_order: 0               # ЗАПОВНИТИ (грн)
+  average_time: ""           # ЗАПОВНИТИ (напр. 45–60 хв)
+  cost_note_uk: "ЗАПОВНИТИ — вартість доставки / умови безкоштовної доставки"
+  cost_note_en: "TO FILL — delivery cost / free delivery terms"
+
+pickup:
+  available: null            # true / false — ЗАПОВНИТИ
+  address: "ЗАПОВНИТИ / TO FILL — адреса самовивозу"
+  ready_time: ""             # ЗАПОВНИТИ (напр. 20–30 хв)
+
+# --- Оплата / Payment ---
+payment:
+  methods: []                # ЗАПОВНИТИ: ["готівка", "картка", "переказ"]
+
+# --- FAQ (типові питання) ---
+faq:
+  - q_uk: "Чи можна забронювати стіл?"
+    a_uk: "Так, бронювання — за телефоном адміністратора +380 (98) 724-23-24."
+    q_en: "Can I reserve a table?"
+    a_en: "Yes, reservations by phone with the administrator: +380 (98) 724-23-24."
+  - q_uk: "Що у вас особливого?"
+    a_uk: "Хоспер-піч (м'ясо та риба на вугіллі), понад 11 сортів пива, домашні настоянки та ковбаски власного виробництва."
+    q_en: "What's special about you?"
+    a_en: "Our hosper charcoal oven (meat & fish), 11+ draft beers, homemade infusions and house-made sausages."
