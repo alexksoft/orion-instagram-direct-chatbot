@@ -536,6 +536,116 @@ async def instagram_webhook(request: Request):
 # ─────────────────────────────────────────────
 # These let a human manager take over or release a conversation.
 
+# ─────────────────────────────────────────────
+# 9d. ADMIN ENV VARS PAGE
+# ─────────────────────────────────────────────
+
+ADMIN_HTML = """
+<!DOCTYPE html><html><head><meta charset="utf-8">
+<title>Orion — Env Vars</title>
+<style>
+  body{font-family:sans-serif;max-width:700px;margin:40px auto;padding:0 16px;background:#f5f5f5}
+  h1{font-size:1.3rem;margin-bottom:24px}
+  .row{display:flex;gap:8px;margin-bottom:10px;align-items:center}
+  .key{width:260px;font-size:.85rem;font-weight:600;color:#333;flex-shrink:0;word-break:break-all}
+  input[type=text]{flex:1;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:.9rem}
+  button{padding:8px 20px;background:#0066cc;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:.95rem}
+  button:hover{background:#0052a3}
+  .msg{margin-top:16px;padding:10px;border-radius:4px;display:none}
+  .ok{background:#d4edda;color:#155724}
+  .err{background:#f8d7da;color:#721c24}
+  .secret input{color:transparent;text-shadow:0 0 6px #333}
+  .secret input:focus{color:#000;text-shadow:none}
+</style></head><body>
+<h1>🔧 Orion — Environment Variables</h1>
+<form id="f"></form>
+<br><button onclick="save()">💾 Save all</button>
+<div class="msg" id="msg"></div>
+<script>
+const SECRET_KEYS = ['KIRO_GATEWAY_API_KEY','META_APP_SECRET','META_LONG_LIVED_USER_TOKEN',
+  'IG_PAGE_ACCESS_TOKEN','RENDER_API_KEY'];
+async function load(){
+  const r = await fetch('/admin/env/data');
+  const vars = await r.json();
+  const f = document.getElementById('f');
+  vars.forEach(v=>{
+    const isSecret = SECRET_KEYS.includes(v.key);
+    const row = document.createElement('div');
+    row.className = 'row' + (isSecret?' secret':'');
+    row.innerHTML = `<div class="key">${v.key}</div>
+      <input type="text" name="${v.key}" value="${v.value}">`;
+    f.appendChild(row);
+  });
+}
+async function save(){
+  const inputs = document.querySelectorAll('#f input');
+  const data = {};
+  inputs.forEach(i=>data[i.name]=i.value);
+  const r = await fetch('/admin/env/save',{method:'POST',
+    headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+  const msg = document.getElementById('msg');
+  msg.style.display='block';
+  if(r.ok){msg.className='msg ok';msg.textContent='✅ Saved successfully';}
+  else{msg.className='msg err';msg.textContent='❌ Save failed: '+(await r.text());}
+}
+load();
+</script></body></html>
+"""
+
+
+@app.get("/admin/env")
+def admin_env_page(password: str = Query(default="")):
+    """Admin page to view and edit Render environment variables."""
+    admin_password = get_env("ADMIN_PASSWORD", "")
+    if not admin_password or password != admin_password:
+        return Response(content="Unauthorized — add ?password=YOUR_ADMIN_PASSWORD to the URL", status_code=401)
+    return Response(content=ADMIN_HTML, media_type="text/html")
+
+
+@app.get("/admin/env/data")
+def admin_env_data(password: str = Query(default="")):
+    """Return current Render env vars as JSON."""
+    admin_password = get_env("ADMIN_PASSWORD", "")
+    if not admin_password or password != admin_password:
+        return Response(status_code=401)
+    api_key = get_env("RENDER_API_KEY")
+    service_id = get_env("RENDER_SERVICE_ID")
+    if not api_key or not service_id:
+        return Response(content="RENDER_API_KEY / RENDER_SERVICE_ID not set", status_code=500)
+    resp = requests.get(
+        f"https://api.render.com/v1/services/{service_id}/env-vars",
+        headers={"Authorization": f"Bearer {api_key}", "Accept": "application/json"},
+        timeout=10,
+    )
+    resp.raise_for_status()
+    return resp.json()
+
+
+@app.post("/admin/env/save")
+async def admin_env_save(request: Request, password: str = Query(default="")):
+    """Save updated env vars to Render."""
+    admin_password = get_env("ADMIN_PASSWORD", "")
+    if not admin_password or password != admin_password:
+        return Response(status_code=401)
+    api_key = get_env("RENDER_API_KEY")
+    service_id = get_env("RENDER_SERVICE_ID")
+    if not api_key or not service_id:
+        return Response(content="RENDER_API_KEY / RENDER_SERVICE_ID not set", status_code=500)
+    data = await request.json()
+    env_vars = [{"key": k, "value": v} for k, v in data.items()]
+    resp = requests.put(
+        f"https://api.render.com/v1/services/{service_id}/env-vars",
+        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json", "Accept": "application/json"},
+        json=env_vars,
+        timeout=10,
+    )
+    resp.raise_for_status()
+    # update in-process too
+    for k, v in data.items():
+        os.environ[k] = v
+    return {"status": "ok"}
+
+
 @app.post("/manager/handoff/{user_id}")
 def manager_take_over(user_id: str):
     """Manager takes over — bot goes silent for this user."""
