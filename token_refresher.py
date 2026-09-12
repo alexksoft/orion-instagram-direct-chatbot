@@ -21,68 +21,58 @@ What you need in .env:
 """
 
 import logging
-import re
+import os
 import time
-from pathlib import Path
 
 import requests
 
 log = logging.getLogger("Orion.token_refresher")
 
-# Refresh when fewer than this many days remain on the token
 REFRESH_THRESHOLD_DAYS = 10
-
-# Meta Graph API base URL
 GRAPH = "https://graph.facebook.com/v26.0"
-
-# Path to the .env file (same folder as this script)
-ENV_FILE = Path(".env")
+RENDER_API = "https://api.render.com/v1"
 
 
-# ─────────────────────────────────────────────
-# .env FILE HELPERS
-# ─────────────────────────────────────────────
-
-def _read_env() -> dict[str, str]:
+def _update_render_env(key: str, value: str) -> None:
     """
-    Read the .env file and return all key=value pairs as a dictionary.
-    Lines starting with # are comments and are ignored.
+    Update an environment variable on Render via API so it survives restarts.
+    Requires RENDER_API_KEY and RENDER_SERVICE_ID set in Render dashboard.
+    Also updates os.environ so the running process sees the new value immediately.
     """
-    result: dict[str, str] = {}
-    if not ENV_FILE.exists():
-        return result
-    for line in ENV_FILE.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        key, _, value = line.partition("=")
-        result[key.strip()] = value.strip()
-    return result
+    os.environ[key] = value  # update in-process immediately
 
-
-def _write_env_key(key: str, value: str) -> None:
-    """
-    Update a single key=value line in .env.
-    If the key already exists → replace its value.
-    If the key doesn't exist → add it at the end.
-    """
-    if not ENV_FILE.exists():
-        # Create the file if it doesn't exist yet
-        ENV_FILE.write_text(f"{key}={value}\n", encoding="utf-8")
+    api_key = os.environ.get("RENDER_API_KEY", "")
+    service_id = os.environ.get("RENDER_SERVICE_ID", "")
+    if not api_key or not service_id:
+        log.warning("RENDER_API_KEY / RENDER_SERVICE_ID not set — token updated in memory only")
         return
 
-    text = ENV_FILE.read_text(encoding="utf-8")
+    try:
+        # Render API: retrieve current env vars, patch the target key, PUT back the full list
+        headers = {"Authorization": f"Bearer {api_key}", "Accept": "application/json"}
+        resp = requests.get(f"{RENDER_API}/services/{service_id}/env-vars", headers=headers, timeout=10)
+        resp.raise_for_status()
+        env_vars = resp.json()  # list of {"key": ..., "value": ...}
 
-    # Look for an existing line like: KEY=anything
-    pattern = re.compile(rf"^{re.escape(key)}=.*$", re.MULTILINE)
-    if pattern.search(text):
-        # Replace the existing line
-        text = pattern.sub(f"{key}={value}", text)
-    else:
-        # Append a new line at the end
-        text = text.rstrip("\n") + f"\n{key}={value}\n"
+        updated = False
+        for item in env_vars:
+            if item.get("key") == key:
+                item["value"] = value
+                updated = True
+                break
+        if not updated:
+            env_vars.append({"key": key, "value": value})
 
-    ENV_FILE.write_text(text, encoding="utf-8")
+        put_resp = requests.put(
+            f"{RENDER_API}/services/{service_id}/env-vars",
+            headers={**headers, "Content-Type": "application/json"},
+            json=env_vars,
+            timeout=10,
+        )
+        put_resp.raise_for_status()
+        log.info("Render env var %s updated via API", key)
+    except Exception as exc:
+        log.error("Failed to update Render env var %s: %s", key, exc)
 
 
 # ─────────────────────────────────────────────
@@ -213,17 +203,14 @@ def refresh_if_needed() -> None:
     Writes updated tokens back to .env when refresh happens.
     Safe to call multiple times — does nothing if token is still fresh.
     """
-    # Read the required values from .env
-    env = _read_env()
-    app_id = env.get("META_APP_ID", "")
-    app_secret = env.get("META_APP_SECRET", "")
-    user_token = env.get("META_LONG_LIVED_USER_TOKEN", "")
+    app_id = os.environ.get("META_APP_ID", "")
+    app_secret = os.environ.get("META_APP_SECRET", "")
+    user_token = os.environ.get("META_LONG_LIVED_USER_TOKEN", "")
 
-    # If any of the three required values are missing, skip silently
     if not all([app_id, app_secret, user_token]):
         log.info(
             "Token auto-refresh skipped: META_APP_ID / META_APP_SECRET / "
-            "META_LONG_LIVED_USER_TOKEN not set in .env"
+            "META_LONG_LIVED_USER_TOKEN not set"
         )
         return
 
@@ -249,7 +236,6 @@ def refresh_if_needed() -> None:
         log.error("Refresh aborted — could not get new page token")
         return
 
-    # Step 3: save both tokens to .env so they survive a restart
-    _write_env_key("META_LONG_LIVED_USER_TOKEN", new_user_token)
-    _write_env_key("IG_PAGE_ACCESS_TOKEN", new_page_token)
-    log.info("Both tokens written to .env — refresh complete ✓")
+    _update_render_env("META_LONG_LIVED_USER_TOKEN", new_user_token)
+    _update_render_env("IG_PAGE_ACCESS_TOKEN", new_page_token)
+    log.info("Both tokens saved to Render env vars — refresh complete ✓")
