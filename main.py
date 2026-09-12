@@ -542,7 +542,7 @@ async def instagram_webhook(request: Request):
 
 ADMIN_HTML = """
 <!DOCTYPE html><html><head><meta charset="utf-8">
-<title>Orion — Env Vars</title>
+<title>Orion - Env Vars</title>
 <style>
   body{font-family:sans-serif;max-width:700px;margin:40px auto;padding:0 16px;background:#f5f5f5}
   h1{font-size:1.3rem;margin-bottom:24px}
@@ -557,37 +557,45 @@ ADMIN_HTML = """
   .secret input{color:transparent;text-shadow:0 0 6px #333}
   .secret input:focus{color:#000;text-shadow:none}
 </style></head><body>
-<h1>🔧 Orion — Environment Variables</h1>
+<h1>Orion - Environment Variables</h1>
 <form id="f"></form>
-<br><button onclick="save()">💾 Save all</button>
+<br><button onclick="save()">Save all</button>
 <div class="msg" id="msg"></div>
 <script>
-const SECRET_KEYS = ['KIRO_GATEWAY_API_KEY','META_APP_SECRET','META_LONG_LIVED_USER_TOKEN',
-  'IG_PAGE_ACCESS_TOKEN','RENDER_API_KEY'];
-const pwd = new URLSearchParams(window.location.search).get('password')||'';
+const SECRET_KEYS=['KIRO_GATEWAY_API_KEY','META_APP_SECRET','META_LONG_LIVED_USER_TOKEN','IG_PAGE_ACCESS_TOKEN','RENDER_API_KEY'];
+const pwd=new URLSearchParams(window.location.search).get('password')||'';
 async function load(){
-  const r = await fetch('/admin/env/data?password='+pwd);
-  const vars = await r.json();
-  const f = document.getElementById('f');
-  vars.forEach(v=>{
-    const isSecret = SECRET_KEYS.includes(v.key);
-    const row = document.createElement('div');
-    row.className = 'row' + (isSecret?' secret':'');
-    row.innerHTML = `<div class="key">${v.key}</div>
-      <input type="text" name="${v.key}" value="${v.value}">`;
+  const r=await fetch('/admin/env/data?password='+pwd);
+  if(!r.ok){document.getElementById('f').innerHTML='<p style="color:red">Failed to load: '+r.status+'</p>';return;}
+  const vars=await r.json();
+  const f=document.getElementById('f');
+  vars.forEach(function(v){
+    const key=v.envVar?v.envVar.key:v.key;
+    const val=v.envVar?v.envVar.value:v.value;
+    const isSecret=SECRET_KEYS.indexOf(key)>=0;
+    const row=document.createElement('div');
+    row.className='row'+(isSecret?' secret':'');
+    const d=document.createElement('div');
+    d.className='key';
+    d.textContent=key;
+    const inp=document.createElement('input');
+    inp.type='text';
+    inp.name=key;
+    inp.value=val;
+    row.appendChild(d);
+    row.appendChild(inp);
     f.appendChild(row);
   });
 }
 async function save(){
-  const inputs = document.querySelectorAll('#f input');
-  const data = {};
-  inputs.forEach(i=>data[i.name]=i.value);
-  const r = await fetch('/admin/env/save?password='+pwd,{method:'POST',
-    headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
-  const msg = document.getElementById('msg');
+  const inputs=document.querySelectorAll('#f input');
+  const data={};
+  inputs.forEach(function(i){data[i.name]=i.value;});
+  const r=await fetch('/admin/env/save?password='+pwd,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+  const msg=document.getElementById('msg');
   msg.style.display='block';
-  if(r.ok){msg.className='msg ok';msg.textContent='✅ Saved successfully';}
-  else{msg.className='msg err';msg.textContent='❌ Save failed: '+(await r.text());}
+  if(r.ok){msg.className='msg ok';msg.textContent='Saved successfully';}
+  else{msg.className='msg err';msg.textContent='Save failed: '+r.status;}
 }
 load();
 </script></body></html>
