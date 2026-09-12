@@ -564,8 +564,9 @@ ADMIN_HTML = """
 <script>
 const SECRET_KEYS = ['KIRO_GATEWAY_API_KEY','META_APP_SECRET','META_LONG_LIVED_USER_TOKEN',
   'IG_PAGE_ACCESS_TOKEN','RENDER_API_KEY'];
+const pwd = new URLSearchParams(window.location.search).get('password')||'';
 async function load(){
-  const r = await fetch('/admin/env/data');
+  const r = await fetch('/admin/env/data?password='+pwd);
   const vars = await r.json();
   const f = document.getElementById('f');
   vars.forEach(v=>{
@@ -581,7 +582,7 @@ async function save(){
   const inputs = document.querySelectorAll('#f input');
   const data = {};
   inputs.forEach(i=>data[i.name]=i.value);
-  const r = await fetch('/admin/env/save',{method:'POST',
+  const r = await fetch('/admin/env/save?password='+pwd,{method:'POST',
     headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
   const msg = document.getElementById('msg');
   msg.style.display='block';
