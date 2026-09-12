@@ -574,7 +574,7 @@ async function load(){
     const val=v.envVar?v.envVar.value:v.value;
     const isSecret=SECRET_KEYS.indexOf(key)>=0;
     const row=document.createElement('div');
-    row.className='row'+(isSecret?' secret':'');
+    row.className='row';
     const d=document.createElement('div');
     d.className='key';
     d.textContent=key;
@@ -582,6 +582,11 @@ async function load(){
     inp.type='text';
     inp.name=key;
     inp.value=val;
+    inp.dataset.val=val;
+    inp.style.color='transparent';
+    inp.style.textShadow='0 0 6px #333';
+    inp.addEventListener('focus',function(){this.style.color='';this.style.textShadow='';});
+    inp.addEventListener('blur',function(){if(this.value===this.dataset.val){this.style.color='transparent';this.style.textShadow='0 0 6px #333';}});
     row.appendChild(d);
     row.appendChild(inp);
     f.appendChild(row);
