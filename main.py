@@ -216,8 +216,12 @@ def ask_ai(user_text: str, history: list[dict]) -> str | None:
 
     url = gateway_url.rstrip("/") + "/v1/chat/completions"
 
-    # Build the messages list: system prompt + history + new user message
-    messages = [{"role": "system", "content": build_system_prompt()}]
+    # Build the messages list: inject system prompt as first user/assistant exchange
+    # (Kiro gateway overrides system role — use message injection instead)
+    messages = [
+        {"role": "user", "content": f"[CONTEXT]\n{build_system_prompt()}\n[/CONTEXT]\n\nAcknowledge you are the Orion restaurant assistant and will only answer about the restaurant."},
+        {"role": "assistant", "content": "Зрозумів! Я асистент ресторану Orion у Києві. Готовий допомогти з меню, бронюванням та іншими питаннями про ресторан."},
+    ]
     messages.extend(history)
     messages.append({"role": "user", "content": user_text})
 
