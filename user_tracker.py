@@ -72,7 +72,7 @@ def _track(sender: str, sheet_tab: str):
         scopes = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 
         if creds_json:
-            info = json.loads(creds_json)
+            info = json.loads(creds_json.replace('\\n', '\n'))
             creds = Credentials.from_service_account_info(info, scopes=scopes)
             gc = gspread.authorize(creds)
         elif creds_path:
