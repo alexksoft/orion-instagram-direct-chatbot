@@ -31,6 +31,7 @@ from fastapi import FastAPI, Query, Request, Response
 from pydantic import BaseModel
 
 from token_refresher import refresh_if_needed
+from user_tracker import track_user
 
 # ─────────────────────────────────────────────
 # 1. LOAD SETTINGS FROM .env FILE
@@ -339,6 +340,9 @@ def process_message(user_id: str, text: str) -> str:
     6. Return the reply.
     """
     log.info("IN  user=%s text=%r", user_id, text)
+
+    # Track user in Google Sheets
+    track_user(user_id, sheet_tab="Orion")
 
     # Step 1: If a human manager is handling this conversation, bot stays silent
     if is_human_controlled(user_id):
