@@ -1,53 +1,20 @@
 # user_tracker.py
 # Appends a new row to a Google Sheet tab on every user message.
+# Fetches Instagram profile info (username, followers, verified) via Graph API.
 
 import logging
 import os
+import json
+import tempfile
 from datetime import datetime, timezone
 from threading import Thread
 
+import requests
 from dotenv import load_dotenv
 
 log = logging.getLogger("Orion")
 
-_PREFIX_MAP = {
-    "+1":    ("USA/Canada",        "America/New_York"),
-    "+44":   ("UK",                "Europe/London"),
-    "+49":   ("Germany",           "Europe/Berlin"),
-    "+33":   ("France",            "Europe/Paris"),
-    "+34":   ("Spain",             "Europe/Madrid"),
-    "+39":   ("Italy",             "Europe/Rome"),
-    "+48":   ("Poland",            "Europe/Warsaw"),
-    "+380":  ("Ukraine",           "Europe/Kyiv"),
-    "+7":    ("Russia/Kazakhstan", "Europe/Moscow"),
-    "+375":  ("Belarus",           "Europe/Minsk"),
-    "+90":   ("Turkey",            "Europe/Istanbul"),
-    "+972":  ("Israel",            "Asia/Jerusalem"),
-    "+971":  ("UAE",               "Asia/Dubai"),
-    "+966":  ("Saudi Arabia",      "Asia/Riyadh"),
-    "+20":   ("Egypt",             "Africa/Cairo"),
-    "+27":   ("South Africa",      "Africa/Johannesburg"),
-    "+234":  ("Nigeria",           "Africa/Lagos"),
-    "+91":   ("India",             "Asia/Kolkata"),
-    "+86":   ("China",             "Asia/Shanghai"),
-    "+81":   ("Japan",             "Asia/Tokyo"),
-    "+82":   ("South Korea",       "Asia/Seoul"),
-    "+65":   ("Singapore",         "Asia/Singapore"),
-    "+62":   ("Indonesia",         "Asia/Jakarta"),
-    "+55":   ("Brazil",            "America/Sao_Paulo"),
-    "+54":   ("Argentina",         "America/Argentina/Buenos_Aires"),
-    "+52":   ("Mexico",            "America/Mexico_City"),
-    "+61":   ("Australia",         "Australia/Sydney"),
-}
-
-
-def _get_country_tz(sender: str) -> tuple[str, str]:
-    phone = sender if sender.startswith("+") else "+" + sender
-    for length in (4, 3, 2):
-        prefix = phone[:length]
-        if prefix in _PREFIX_MAP:
-            return _PREFIX_MAP[prefix]
-    return ("Unknown", "Unknown")
+GRAPH_API_URL = "https://graph.facebook.com/v21.0"
 
 
 def _get_env(key: str) -> str:
@@ -55,45 +22,76 @@ def _get_env(key: str) -> str:
     return os.environ.get(key, "")
 
 
+def _get_instagram_profile(user_id: str) -> dict:
+    """Fetch username, follower_count, is_verified_user from Instagram Graph API."""
+    token = _get_env("IG_PAGE_ACCESS_TOKEN")
+    if not token:
+        return {}
+    try:
+        r = requests.get(
+            f"{GRAPH_API_URL}/{user_id}",
+            params={"fields": "username,follower_count,is_verified_user,profile_pic", "access_token": token},
+            timeout=10,
+        )
+        data = r.json()
+        if "error" in data:
+            log.warning("[user_tracker] Graph API error: %s", data["error"].get("message"))
+            return {}
+        return data
+    except Exception as e:
+        log.warning("[user_tracker] Failed to fetch Instagram profile: %s", e)
+        return {}
+
+
+def _get_client(creds_json: str, creds_path: str):
+    import gspread
+    if creds_json:
+        info = json.loads(creds_json)
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+            json.dump(info, f)
+            tmp_path = f.name
+        gc = gspread.service_account(filename=tmp_path)
+        os.unlink(tmp_path)
+    elif creds_path:
+        gc = gspread.service_account(filename=creds_path)
+    else:
+        return None
+    return gc
+
+
 def _track(sender: str, sheet_tab: str):
     try:
-        import gspread
-        import json
-        import tempfile
-        from google.oauth2.service_account import Credentials
-
-        sheet_id = _get_env("GOOGLE_SHEET_ID")
-        if not sheet_id:
-            return
-
-        scopes = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-
-        creds_path = _get_env("GOOGLE_CREDS_PATH")
+        sheet_id  = _get_env("GOOGLE_SHEET_ID")
         creds_json = _get_env("GOOGLE_CREDS_JSON")
+        creds_path = _get_env("GOOGLE_CREDS_PATH")
 
-        if creds_json:
-            # Write to a temp file to avoid any escaping issues
-            info = json.loads(creds_json)
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
-                json.dump(info, f)
-                tmp_path = f.name
-            gc = gspread.service_account(filename=tmp_path)
-            os.unlink(tmp_path)
-        elif creds_path:
-            gc = gspread.service_account(filename=creds_path)
-        else:
+        if not sheet_id or (not creds_json and not creds_path):
             return
+
+        # Fetch Instagram profile
+        profile = _get_instagram_profile(sender)
+        username     = profile.get("username", "")
+        followers    = profile.get("follower_count", "")
+        verified     = profile.get("is_verified_user", "")
+        profile_pic  = profile.get("profile_pic", "")
+
+        gc = _get_client(creds_json, creds_path)
+        if gc is None:
+            return
+
         sh = gc.open_by_key(sheet_id)
         ws = sh.worksheet(sheet_tab)
 
         # Write header if sheet is empty
         if ws.cell(1, 1).value != "user_id":
-            ws.insert_row(["user_id", "country", "timezone", "timestamp"], index=1)
+            ws.insert_row(
+                ["user_id", "username", "followers", "verified", "profile_pic", "timestamp"],
+                index=1
+            )
 
         now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M")
-        country, tz = _get_country_tz(sender)
-        ws.append_row([sender, country, tz, now])
-        log.info("[user_tracker] Row added for %s (%s) on tab '%s'", sender, country, sheet_tab)
+        ws.append_row([sender, username, followers, verified, profile_pic, now])
+        log.info("[user_tracker] Row added: %s (@%s) followers=%s", sender, username, followers)
 
     except Exception as e:
         log.warning("[user_tracker] Failed: %s", e)
