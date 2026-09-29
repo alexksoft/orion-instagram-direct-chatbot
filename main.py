@@ -288,9 +288,9 @@ def rule_based_reply(text: str) -> str:
     has_cyrillic = any("\u0400" <= c <= "\u04FF" for c in text)
 
     if any(w in lowered for w in ("менеджер", "людин", "manager", "human", "оператор")):
-        return ("Передаю ваш запит менеджеру. Також можна зателефонувати: +380 (98) 724-23-24"
+        return ("Передаю ваш запит менеджеру. Також можна зателефонувати: +380 93 808-74-66"
                 if has_cyrillic else
-                "I'll pass your request to a manager. You can also call: +380 (98) 724-23-24")
+                "I'll pass your request to a manager. You can also call: +380 93 808-74-66")
 
     if any(w in lowered for w in ("меню", "menu", "страв", "ціна", "price")):
         return ("У нас є: хоспер-меню (м'ясо та риба на вугіллі), ковбаски власного виробництва, "
@@ -313,9 +313,9 @@ def rule_based_reply(text: str) -> str:
                 "Which one interests you?")
 
     if any(w in lowered for w in ("броню", "стіл", "reserv", "table")):
-        return ("Бронювання столу — за телефоном адміністратора: +380 (98) 724-23-24"
+        return ("Бронювання столу — за телефоном адміністратора: +380 93 808-74-66"
                 if has_cyrillic else
-                "Table reservations by phone: +380 (98) 724-23-24")
+                "Table reservations by phone: +380 93 808-74-66")
 
     # Default greeting
     return ("Вітаю! Це Orion 🔥 Чим можу допомогти: меню, замовлення чи бронювання?"

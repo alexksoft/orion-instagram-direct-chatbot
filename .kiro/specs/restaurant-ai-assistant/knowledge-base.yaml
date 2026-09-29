@@ -31,7 +31,7 @@ restaurant:
   hours: "ЗАПОВНИТИ / TO FILL — години роботи (сайт зазначає: працюємо щодня)"
 
 contacts:
-  reservation_phone: "+380 (98) 724-23-24"   # бронювання столу через адміністратора
+  reservation_phone: "+380 93 808-74-66"   # бронювання столу через адміністратора
   instagram: "ЗАПОВНИТИ / TO FILL — @нік в Instagram"
   note_uk: "Бронювання столу — за телефоном адміністратора."
   note_en: "Table reservations — by phone with the administrator."
@@ -143,9 +143,9 @@ payment:
 # --- FAQ (типові питання) ---
 faq:
   - q_uk: "Чи можна забронювати стіл?"
-    a_uk: "Так, бронювання — за телефоном адміністратора +380 (98) 724-23-24."
+    a_uk: "Так, бронювання — за телефоном адміністратора +380 93 808-74-66."
     q_en: "Can I reserve a table?"
-    a_en: "Yes, reservations by phone with the administrator: +380 (98) 724-23-24."
+    a_en: "Yes, reservations by phone with the administrator: +380 93 808-74-66."
   - q_uk: "Що у вас особливого?"
     a_uk: "Хоспер-піч (м'ясо та риба на вугіллі), понад 11 сортів пива, домашні настоянки та ковбаски власного виробництва."
     q_en: "What's special about you?"
