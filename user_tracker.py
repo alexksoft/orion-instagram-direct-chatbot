@@ -85,12 +85,13 @@ def _track(sender: str, sheet_tab: str):
         # Write header if sheet is empty
         if ws.cell(1, 1).value != "user_id":
             ws.insert_row(
-                ["user_id", "username", "followers", "verified", "profile_pic", "timestamp"],
+                ["user_id", "username", "followers", "verified", "profile_pic", "profile_url", "timestamp"],
                 index=1
             )
 
         now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M")
-        ws.append_row([sender, username, followers, verified, profile_pic, now])
+        profile_url = f"https://www.instagram.com/{username}/" if username else ""
+        ws.append_row([sender, username, followers, verified, profile_pic, profile_url, now])
         log.info("[user_tracker] Row added: %s (@%s) followers=%s", sender, username, followers)
 
     except Exception as e:
