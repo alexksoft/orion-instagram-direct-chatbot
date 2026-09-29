@@ -59,22 +59,26 @@ def _track(sender: str, sheet_tab: str):
     try:
         import gspread
         import json
+        import tempfile
         from google.oauth2.service_account import Credentials
 
         sheet_id = _get_env("GOOGLE_SHEET_ID")
         if not sheet_id:
             return
 
-        # Support both a file path and inline JSON string
+        scopes = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+
         creds_path = _get_env("GOOGLE_CREDS_PATH")
         creds_json = _get_env("GOOGLE_CREDS_JSON")
 
-        scopes = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-
         if creds_json:
-            info = json.loads(creds_json.replace('\\n', '\n'))
-            creds = Credentials.from_service_account_info(info, scopes=scopes)
-            gc = gspread.authorize(creds)
+            # Write to a temp file to avoid any escaping issues
+            info = json.loads(creds_json)
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+                json.dump(info, f)
+                tmp_path = f.name
+            gc = gspread.service_account(filename=tmp_path)
+            os.unlink(tmp_path)
         elif creds_path:
             gc = gspread.service_account(filename=creds_path)
         else:
