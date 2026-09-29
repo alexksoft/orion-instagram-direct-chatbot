@@ -454,6 +454,35 @@ def health():
     }
 
 
+@app.get("/debug/tracker")
+def debug_tracker():
+    """Test Google Sheets connection directly."""
+    import os, json
+    sheet_id = get_env("GOOGLE_SHEET_ID")
+    creds_json = get_env("GOOGLE_CREDS_JSON")
+    creds_path = get_env("GOOGLE_CREDS_PATH")
+    if not sheet_id:
+        return {"error": "GOOGLE_SHEET_ID not set"}
+    if not creds_json and not creds_path:
+        return {"error": "GOOGLE_CREDS_JSON and GOOGLE_CREDS_PATH both empty"}
+    try:
+        import gspread
+        from google.oauth2.service_account import Credentials
+        scopes = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+        if creds_json:
+            info = json.loads(creds_json)
+            creds = Credentials.from_service_account_info(info, scopes=scopes)
+            gc = gspread.authorize(creds)
+        else:
+            gc = gspread.service_account(filename=creds_path)
+        sh = gc.open_by_key(sheet_id)
+        ws = sh.worksheet("Orion")
+        ws.append_row(["debug-test", "Ukraine", "Europe/Kyiv", "2026-01-01 00:00"])
+        return {"status": "ok", "sheet": sh.title, "tab": ws.title}
+    except Exception as e:
+        return {"error": str(e)}
+
+
 # ─────────────────────────────────────────────
 # 9a. DEMO CHAT ENDPOINT
 # ─────────────────────────────────────────────
